@@ -111,8 +111,10 @@ The backend and frontend run as two separate processes. The frontend dev server 
 Open a terminal in the project root:
 
 ```bash
-npm run install:all
+npm run setup
 ```
+
+`setup` installs the root tooling plus the backend and frontend dependencies. `npm run install:all` installs only the two apps.
 
 Or install each app manually:
 
