@@ -1,12 +1,15 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  if (!process.env.MONGO_URI) {
+  // MONGO_DB_URI is the name used by the original template, so accept it too.
+  const mongoUri = process.env.MONGO_URI || process.env.MONGO_DB_URI;
+
+  if (!mongoUri) {
     throw new Error('MONGO_URI is missing. Add it to backend/.env');
   }
 
   mongoose.set('strictQuery', true);
-  const conn = await mongoose.connect(process.env.MONGO_URI, {
+  const conn = await mongoose.connect(mongoUri, {
     serverSelectionTimeoutMS: 15000,
   });
 

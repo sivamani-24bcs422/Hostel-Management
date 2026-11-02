@@ -1,52 +1,43 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1
 
 # ---------------------------------------------------------------------------
-# 1. Install frontend dependencies (cached independently from source changes)
+# Stage 1: build the React frontend (same pattern as the original template)
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS frontend-deps
+FROM node:22-alpine AS frontend-builder
+
 WORKDIR /app/frontend
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci --no-audit --no-fund
 
-# ---------------------------------------------------------------------------
-# 2. Build the React SPA
-# ---------------------------------------------------------------------------
-FROM frontend-deps AS frontend-build
+COPY frontend/package*.json ./
+RUN npm ci
+
 COPY frontend/ ./
 RUN npm run build
 
 # ---------------------------------------------------------------------------
-# 3. Install only production backend dependencies
+# Stage 2: production API + built frontend
 # ---------------------------------------------------------------------------
-FROM node:22-alpine AS backend-deps
-WORKDIR /app/backend
-COPY backend/package.json backend/package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund \
-    && npm cache clean --force
-
-# ---------------------------------------------------------------------------
-# 4. Minimal production runtime
-# ---------------------------------------------------------------------------
-FROM node:22-alpine AS runner
-
-ENV NODE_ENV=production \
-    PORT=3000
+FROM node:22-alpine
 
 WORKDIR /app
 
-# tini forwards signals correctly so the container stops gracefully.
-RUN apk add --no-cache tini
+# Install only production backend dependencies.
+COPY backend/package*.json ./backend/
+RUN cd backend && npm ci --omit=dev && npm cache clean --force
 
-COPY --from=backend-deps --chown=node:node /app/backend/node_modules ./backend/node_modules
-COPY --chown=node:node backend/ ./backend/
-COPY --from=frontend-build --chown=node:node /app/frontend/dist ./frontend/dist
+# backend/.env is included on purpose (see .dockerignore) so the MongoDB URL
+# and JWT secret from .env are used inside the container. Environment variables
+# supplied by the hosting platform (e.g. byteXL) take precedence over .env.
+COPY backend/ ./backend/
 
-USER node
+# Also support a root .env (some platforms place the database URL here).
+# The wildcard always matches .env.example, so the build works without .env.
+COPY .env* ./
+
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+
+ENV NODE_ENV=production
+ENV PORT=3000
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-
-ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "backend/server.js"]

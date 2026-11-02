@@ -85,10 +85,10 @@ Hostel-Management/
 │   └── vite.config.js
 ├── .vscode/               # Ready-made run tasks and launch configs
 ├── .dockerignore
-├── .env.example           # Docker Compose / production environment
+├── .env.example           # Optional root env for hosted deployments
 ├── .gitignore
 ├── Dockerfile             # Optimized multi-stage production image
-├── docker-compose.yml     # App + MongoDB stack
+├── docker-compose.yml     # App + optional local MongoDB
 ├── package.json           # Root convenience scripts
 └── README.md
 ```
@@ -206,7 +206,8 @@ The login page also provides **one-click demo login** buttons for all three acco
 | --- | --- |
 | `PORT` | API port (default `3000`) |
 | `NODE_ENV` | `development` or `production` |
-| `MONGO_URI` | MongoDB connection string |
+| `MONGO_URI` | MongoDB connection string (used by Docker and byteXL) |
+| `MONGO_DB_URI` | Accepted alias for `MONGO_URI` |
 | `JWT_SECRET` | Secret used to sign JWTs (**required**) |
 | `JWT_EXPIRES_IN` | Token lifetime (default `7d`) |
 | `CLIENT_URL` | Allowed frontend origin(s), comma separated |
@@ -392,45 +393,97 @@ For a split deployment, host `frontend/dist` on Netlify/Vercel/static hosting, s
 
 ## Docker
 
-The repository includes an optimized multi-stage `Dockerfile`, a `.dockerignore`, and a Compose stack with MongoDB. The image builds the React app once, installs only production backend dependencies, runs as the non-root `node` user, uses `tini` for graceful shutdown and includes a health check.
+The `Dockerfile` follows the same layout as the original project template:
 
-### One command with Docker Compose
+1. a `node:22-alpine` stage builds the React app;
+2. a second `node:22-alpine` stage installs only production backend dependencies, copies the API, the built SPA and `backend/.env`, then runs `node backend/server.js`.
+
+The container serves the SPA and API together on port **3000**. The MongoDB URL is read from **`backend/.env`**, which is copied into the image on purpose. A root `.env` is also copied and loaded as a fallback. Variables set by the hosting platform (including byteXL) override both files at runtime. `MONGO_DB_URI` is also accepted as an alias for `MONGO_URI`.
+
+### Docker Compose
 
 ```bash
 docker compose up --build -d
 docker compose exec app npm run seed --prefix backend
 ```
 
-Open <http://localhost:3000>. The SPA and API are served from the same origin.
+Open <http://localhost:3000>.
 
-Useful commands:
+Compose loads `backend/.env` through `env_file`, so it uses the same database URL and JWT secret as local development. Useful commands:
 
 ```bash
 docker compose logs -f app       # follow app logs
-docker compose ps                # container health
-docker compose down              # stop containers
-docker compose down -v           # stop and delete the MongoDB volume
+docker compose down              # stop the app
 ```
 
-Compose reads optional values from a root `.env` file. Copy `.env.example` to `.env` to change the JWT secret, database URI or seed password. To use an Atlas/remote database, set `MONGO_URI` in the root `.env`; otherwise the bundled `mongo` service is used.
+If you want the optional bundled MongoDB instead of a remote database, set this in `backend/.env`:
+
+```env
+MONGO_URI=mongodb://mongo:27017/hostel_management
+```
+
+Then start the `local-db` profile:
+
+```bash
+docker compose --profile local-db up --build -d
+```
 
 ### Build and run the image directly
 
 ```bash
 docker build -t hostelhub .
 
-docker run --rm -p 3000:3000 \
-  -e MONGO_URI="mongodb://host.docker.internal:27017/hostel_management" \
-  -e JWT_SECRET="replace-with-a-long-random-secret" \
-  -e CLIENT_URL="http://localhost:3000" \
-  hostelhub
+docker run --rm -p 3000:3000 --env-file backend/.env hostelhub
 ```
 
-Then seed through a running container if needed:
+Seed the database once:
 
 ```bash
 docker exec -it <container-id> npm run seed --prefix backend
 ```
+
+You can override the baked-in `.env` at runtime without rebuilding:
+
+```bash
+docker run --rm -p 3000:3000 \
+  --env-file backend/.env \
+  -e MONGO_URI="mongodb://your-host:27017/hostel_management" \
+  -e JWT_SECRET="replace-with-a-long-random-secret" \
+  hostelhub
+```
+
+### Deploying on byteXL
+
+1. Put the real database URL in `backend/.env`:
+
+   ```env
+   PORT=3000
+   MONGO_URI=mongodb://user:password@host:port/database
+   JWT_SECRET=a-long-random-secret
+   CLIENT_URL=http://localhost:3000
+   ```
+
+2. Make that file available to byteXL. `.env` is gitignored by default, so choose one of these:
+   - add `MONGO_URI` and `JWT_SECRET` in byteXL's environment-variable settings (recommended), or
+   - for a college/demo deployment, force-add the file to the repository:
+
+     ```bash
+     git add -f backend/.env
+     git commit -m "Add deployment environment for byteXL"
+     git push
+     ```
+
+     This commits database credentials. Only do this for a throwaway/demo database.
+
+3. In byteXL, use the repository root as the build context. The root `Dockerfile` is detected automatically. If byteXL asks for a port, use **3000**. The app also honours a platform-provided `PORT` variable.
+
+4. After the first successful deployment, seed the demo data once (through byteXL's container terminal, if available):
+
+   ```bash
+   npm run seed --prefix backend
+   ```
+
+5. Open the deployed URL and sign in with one of the demo accounts.
 
 > Local development still uses **frontend on port 5173** and **backend on port 3000**. The Docker image is the production deployment path and serves both on port 3000.
 

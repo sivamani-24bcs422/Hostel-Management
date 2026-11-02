@@ -6,23 +6,22 @@ services:
       context: .
       dockerfile: Dockerfile
     image: hostelhub:latest
-    ports:
-      - "3000:3000"
+    # Uses the same MongoDB URL and JWT secret as local development.
+    env_file:
+      - backend/.env
     environment:
       NODE_ENV: production
       PORT: 3000
-      MONGO_URI: ${MONGO_URI:-mongodb://mongo:27017/hostel_management}
-      JWT_SECRET: ${JWT_SECRET:-hostelhub-docker-dev-secret-change-me}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
-      CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
-      SEED_PASSWORD: ${SEED_PASSWORD:-Password@123}
-    depends_on:
-      mongo:
-        condition: service_healthy
+    ports:
+      - "3000:3000"
     restart: unless-stopped
 
+  # Optional local database. Start it only if backend/.env points to it:
+  #   docker compose --profile local-db up --build -d
+  # and set MONGO_URI=mongodb://mongo:27017/hostel_management in backend/.env
   mongo:
     image: mongo:7
+    profiles: ["local-db"]
     restart: unless-stopped
     volumes:
       - mongo-data:/data/db

@@ -4,10 +4,15 @@
 **/build
 coverage
 
-# Secrets and local environment files
+# Secrets and local environment files.
+# .env and backend/.env are intentionally NOT ignored because byteXL builds the
+# image directly and the app reads its MongoDB URL from these files.
+# Platform-provided environment variables still override them at runtime.
 **/.env
 **/.env.*
 !**/.env.example
+!backend/.env
+!/.env
 
 # Version control, editor and OS cruft
 .git

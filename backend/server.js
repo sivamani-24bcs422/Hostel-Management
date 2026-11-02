@@ -6,7 +6,10 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const mongoSanitize = require('express-mongo-sanitize');
+// backend/.env is the primary source. A root .env (used by some hosts) is
+// loaded as a fallback without overriding values that are already set.
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
@@ -38,20 +41,32 @@ const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+app.set('trust proxy', 1);
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
   })
 );
-app.use(
+
+// In Docker/production the SPA and API are served from the same origin, so
+// accept that origin automatically even when CLIENT_URL only lists dev URLs.
+app.use((req, res, next) => {
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      try {
+        if (new URL(origin).host === req.get('host')) return callback(null, true);
+      } catch {
+        // Invalid Origin header - fall through to the rejection below.
+      }
+
       return callback(new Error('Origin not allowed by CORS'));
     },
     credentials: true,
-  })
-);
+  })(req, res, next);
+});
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
