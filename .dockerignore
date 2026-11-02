@@ -1,0 +1,30 @@
+# Dependencies and build output
+**/node_modules
+**/dist
+**/build
+coverage
+
+# Secrets and local environment files
+**/.env
+**/.env.*
+!**/.env.example
+
+# Version control, editor and OS cruft
+.git
+.gitignore
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tmp
+*.swp
+
+# Documentation and local screenshots
+README.md
+*.png

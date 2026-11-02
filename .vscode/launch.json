@@ -6,7 +6,16 @@
   "configurations": [
     {
       "command": "npm run dev",
-      "name": "Debug Node",
+      "cwd": "${workspaceFolder}/backend",
+      "name": "Debug backend API",
+      "request": "launch",
+      "type": "node-terminal",
+      "outputCapture": "std"
+    },
+    {
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/frontend",
+      "name": "Debug frontend (Vite)",
       "request": "launch",
       "type": "node-terminal",
       "outputCapture": "std"

@@ -1,28 +1,52 @@
-FROM node:22-alpine AS client-builder
+# syntax=docker/dockerfile:1.7
 
-WORKDIR /app/client
+# ---------------------------------------------------------------------------
+# 1. Install frontend dependencies (cached independently from source changes)
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS frontend-deps
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
-COPY client/package*.json ./
-
-RUN npm ci
-
-COPY client/ ./
-
+# ---------------------------------------------------------------------------
+# 2. Build the React SPA
+# ---------------------------------------------------------------------------
+FROM frontend-deps AS frontend-build
+COPY frontend/ ./
 RUN npm run build
 
-# Stage 2
-FROM node:22-alpine
+# ---------------------------------------------------------------------------
+# 3. Install only production backend dependencies
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS backend-deps
+WORKDIR /app/backend
+COPY backend/package.json backend/package-lock.json ./
+RUN npm ci --omit=dev --no-audit --no-fund \
+    && npm cache clean --force
+
+# ---------------------------------------------------------------------------
+# 4. Minimal production runtime
+# ---------------------------------------------------------------------------
+FROM node:22-alpine AS runner
+
+ENV NODE_ENV=production \
+    PORT=3000
 
 WORKDIR /app
 
-COPY package*.json ./
+# tini forwards signals correctly so the container stops gracefully.
+RUN apk add --no-cache tini
 
-COPY . .
-RUN rm -rf node_modules client
+COPY --from=backend-deps --chown=node:node /app/backend/node_modules ./backend/node_modules
+COPY --chown=node:node backend/ ./backend/
+COPY --from=frontend-build --chown=node:node /app/frontend/dist ./frontend/dist
 
-RUN npm ci --only=production
+USER node
 
-COPY --from=client-builder /app/client/dist ./client/dist
+EXPOSE 3000
 
-CMD ["node", "index.js"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/api/health').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
 
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD ["node", "backend/server.js"]

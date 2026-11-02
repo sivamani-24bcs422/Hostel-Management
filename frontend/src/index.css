@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-surface font-sans text-ink antialiased;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+::selection {
+  background: #d0f431;
+  color: #241531;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dfd4ea;
+  border-radius: 999px;
+  border: 2px solid #f7f5fb;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #c29bea;
+}
+
+@layer components {
+  .card {
+    @apply rounded-3xl border border-white/80 bg-white shadow-card;
+  }
+
+  .input-base {
+    @apply h-11 w-full rounded-xl border border-[#E8E1F0] bg-white px-3.5 text-sm text-ink outline-none transition placeholder:text-[#A79CB1] hover:border-lavender-300 focus:border-lavender-400 focus:ring-4 focus:ring-lavender-300/20 disabled:cursor-not-allowed disabled:bg-[#F7F5FB] disabled:text-muted;
+  }
+
+  .label-base {
+    @apply mb-1.5 block text-[13px] font-semibold text-[#4B3A5A];
+  }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] font-semibold text-[#6E6179] transition-all duration-200 hover:bg-lavender-50 hover:text-lavender-700;
+  }
+
+  .sidebar-link-active {
+    @apply bg-lavender-100/80 text-lavender-800 shadow-[inset_0_0_0_1px_rgba(194,155,234,0.18)];
+  }
+
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(18px);
+  }
+
+  .page-bg {
+    background-image:
+      radial-gradient(circle at 8% 0%, rgba(194, 155, 234, 0.16), transparent 30%),
+      radial-gradient(circle at 92% 4%, rgba(208, 244, 49, 0.12), transparent 24%),
+      radial-gradient(circle at 70% 90%, rgba(226, 57, 43, 0.05), transparent 28%);
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+.recharts-cartesian-axis-tick-value {
+  font-size: 11px;
+  fill: #85788f;
+  font-family: 'Manrope Variable', sans-serif;
+}
+
+.recharts-default-tooltip {
+  border-radius: 14px !important;
+  border: 1px solid #efe8f6 !important;
+  box-shadow: 0 18px 45px -24px rgba(45, 25, 70, 0.35) !important;
+  font-family: 'Manrope Variable', sans-serif !important;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  opacity: 0.55;
+  cursor: pointer;
+}

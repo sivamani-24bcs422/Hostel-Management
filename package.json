@@ -1,26 +1,19 @@
 {
-  "name": "mern",
+  "name": "hostelhub",
   "version": "1.0.0",
-  "description": "NodeJS + Express + React + MongoDB",
-  "main": "index.js",
+  "private": true,
+  "description": "HostelHub — a full-stack MERN hostel management system",
   "scripts": {
-    "start": "node index.js",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "client": "cd client && npm run dev",
-    "server": "nodemon index.js",
-    "setup": "npm install && cd client && npm install && cd ..",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "mongoose": "^8.0.3"
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "seed": "npm run seed --prefix backend",
+    "dev": "concurrently -n API,WEB -c magenta,cyan \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run start --prefix backend",
+    "test:smoke": "npm run test:smoke --prefix backend"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2",
-    "nodemon": "^3.0.2"
+    "concurrently": "^9.1.2"
   }
 }
