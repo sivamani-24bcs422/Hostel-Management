@@ -7,6 +7,7 @@ A complete, production-style hostel management platform built with the MERN stac
 ## Table of contents
 
 - [Highlights](#highlights)
+- [Documentation](#documentation)
 - [Tech stack](#tech-stack)
 - [Project structure](#project-structure)
 - [Prerequisites](#prerequisites)
@@ -21,6 +22,14 @@ A complete, production-style hostel management platform built with the MERN stac
 - [Production build](#production-build)
 - [Docker](#docker)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## Documentation
+
+- **[docs.md](docs.md)** — full project report and technical documentation: architecture, data model, modules, API reference, security, testing, and limitations.
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** — step-by-step Render and Vercel deployment without Docker, including Atlas setup, environment variables, seeding, verification, and troubleshooting.
+- **[pptx-content.md](pptx-content.md)** — ready-to-use content for an 8-slide project presentation with speaker notes and visual suggestions.
 
 ---
 
